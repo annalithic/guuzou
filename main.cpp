@@ -31,7 +31,8 @@ For a C++ project simply rename the file to .cpp and run premake
 int playerSize = 32;
 float playerMaxSpeed = 256;
 float jumpSpeed = 512;
-float gravity = 1200;
+float gravity = 2000;
+float jumpQueueWindow = 0.1;
 
 //initial state
 float playerPosX = 20;
@@ -39,13 +40,15 @@ float playerPosY = 500;
 int direction = 0;
 bool grounded = true;
 float verticalVelocity = 0;
+float jumpQueueTimer = 0;
+Color playerColor = YELLOW;
 
 void Init() {
 }
 
 void Loop() {
 	float delta = GetFrameTime();
-	std::string text = std::to_string(1.f/delta);
+	std::string text = std::to_string(GetFPS());
 
 	if (IsKeyPressed(KEY_LEFT) || IsKeyReleased(KEY_RIGHT)) direction = -1;
 	else if (IsKeyPressed(KEY_RIGHT) || IsKeyReleased(KEY_LEFT)) direction = 1;
@@ -54,10 +57,21 @@ void Loop() {
 		playerPosX += playerMaxSpeed * delta * direction;
 	}
 
-	if (IsKeyPressed(KEY_Z) && grounded) {
-		grounded = false;
-		verticalVelocity = jumpSpeed;
+	if (IsKeyPressed(KEY_Z)) {
+		jumpQueueTimer = jumpQueueWindow;
 	}
+
+	if (jumpQueueTimer > 0) {
+		if (grounded) {
+			grounded = false;
+			verticalVelocity = jumpSpeed;
+			jumpQueueTimer = -1;
+		}
+		else {
+			jumpQueueTimer -= delta;
+		}
+	}
+
 
 	if (!grounded) {
 		playerPosY -= verticalVelocity * delta;
@@ -68,11 +82,12 @@ void Loop() {
 		verticalVelocity -= gravity * delta;
 	}
 
+	//playerColor = jumpQueueTimer > 0 ? GREEN : YELLOW;
 
 	// drawing
 	BeginDrawing();
 	ClearBackground(BLACK);
-	DrawRectangle(playerPosX, playerPosY, playerSize, playerSize, YELLOW);
+	DrawRectangle(playerPosX, playerPosY, playerSize, playerSize, playerColor);
 	
 	DrawRectangle(0, 500 + playerSize, 1280, 800, GRAY);
 
@@ -84,6 +99,8 @@ void Loop() {
 int main ()
 {
 	Init();
+
+	SetConfigFlags(FLAG_VSYNC_HINT);
 
 	// set up the window
 	InitWindow(1280, 800, "Hello Raylib");
