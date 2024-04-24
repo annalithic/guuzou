@@ -6,6 +6,8 @@ bool Blocked(int x, int y, int mapWidth, int mapHeight, int* tiles) {
 
 MoveResult Collision::Move(float posX, float posY, float radius, float moveX, float moveY, int mapWidth, int mapHeight, int* tiles, int tileRadius)
 {
+	//todo disable collision in direction if block has another block in that direction?
+
 	float moveFrac = 1;
 	int collisionResult = 0;
 
@@ -58,27 +60,28 @@ MoveResult Collision::Move(float posX, float posY, float radius, float moveX, fl
 
 
 					if (fracX1 < 1 && fracY1 < 1 && (fracX1 >= 0 || fracY1 >= 0)) {
-						//enter x in between entering and exiting y, means hit horizontal wall
-						if (fracX1 > fracY1) {
+						//enter y before entering x - hit ceil
+						if (fracY1 >= fracX1) {
+							//enter x before leaving y
+							if (fracX1 < fracY2) {
+								//TraceLog(LOG_INFO, "HIT CEIL %d %d AT %f", x, y, fracY1);
+								if (fracY1 <= moveFrac) {
+									moveFrac = fracY1;
+									collisionResult = verticalDirection == 1 ? 2 : 4;
+								}
+							}
+						}
+						//enter x before entering y - hit wall
+						else {
 							//enter y before leaving x
 							if (fracY1 < fracX2) {
 								//TraceLog(LOG_INFO, "HIT WALL %d %d AT %f", x, y, fracX1);
 								if (fracX1 < moveFrac) {
 									moveFrac = fracX1;
-									collisionResult = 1;
+									collisionResult = horizontalDirection == 1 ? 1 : 3;
 								}
 							}
 
-						}
-						else {
-							//enter x before leaving y
-							if (fracX1 < fracY2) {
-								//TraceLog(LOG_INFO, "HIT CEIL %d %d AT %f", x, y, fracY1);
-								if (fracY1 < moveFrac) {
-									moveFrac = fracY1;
-									collisionResult = 2;
-								}
-							}
 						}
 					}
 				}

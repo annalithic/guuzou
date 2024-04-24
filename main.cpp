@@ -8,8 +8,9 @@ const int tileRadius = tileSize / 2;
 
 int playerRadius = 16;
 float playerMaxSpeed = 256;
-float jumpSpeed = 700;
+float jumpSpeed = 800;
 float gravity = 2000;
+float coyoteTime = 0.05;
 float jumpQueueWindow = 0.1;
 
 //initial state
@@ -17,10 +18,11 @@ float playerPosX = 200;
 float playerPosY = 135;
 int horizontalDirection = 0;
 int verticalDirection = 0;
-bool grounded = true;
+bool grounded = false;
 float horizontalVelocity = 0;
 float verticalVelocity = 0;
 float jumpQueueTimer = 0;
+float coyoteTimer = 0;
 Color playerColor = YELLOW;
 
 //uninitialized
@@ -65,7 +67,24 @@ void Loop() {
 	else {
 		horizontalVelocity = 0;
 	}
+	if (grounded) {
+		coyoteTimer = coyoteTime;
+	}
+	else {
+		coyoteTimer -= delta;
+	}
+
+	jumpQueueTimer -= delta;
+	if (IsKeyPressed(KEY_Z)) {
+		jumpQueueTimer = jumpQueueWindow;
+	}
+	if (jumpQueueTimer > 0 && coyoteTimer > 0) {
+		verticalVelocity = jumpSpeed * -1;
+	} else {
+		verticalVelocity += gravity * delta;
+	}
 	
+	/*
 	if (IsKeyPressed(KEY_UP) || IsKeyReleased(KEY_DOWN)) verticalDirection = -1;
 	else if (IsKeyPressed(KEY_DOWN) || IsKeyReleased(KEY_UP)) verticalDirection = 1;
 	if (IsKeyDown(KEY_UP) || IsKeyDown(KEY_DOWN)) {
@@ -74,6 +93,7 @@ void Loop() {
 	else {
 		verticalVelocity = 0;
 	}
+	*/
 
 	float moveX = horizontalVelocity * delta;
 	float moveY = verticalVelocity * delta;
@@ -83,14 +103,17 @@ void Loop() {
 	playerPosY += moveY * result.fraction;
 	playerPosX += moveX * result.fraction;
 
+	grounded = false;
 	//hit wall, continue vertically
-	if (result.result == 1) { 
+	if (result.result == 1 || result.result == 3) { 
 		float move2Y = moveY * (1 - result.fraction);
 		result = Collision::Move(playerPosX, playerPosY, playerRadius, 0, move2Y, mapWidth, mapHeight, tiles, tileRadius);
 		playerPosY += move2Y * result.fraction;
 	}
 	//hit ceil/floor, continue horizontally
-	else if (result.result == 2) {
+	else if (result.result == 2 || result.result == 4) {
+		if (result.result == 2) grounded = true;
+		verticalVelocity = 0;
 		float move2X = moveX * (1 - result.fraction);
 		result = Collision::Move(playerPosX, playerPosY, playerRadius, move2X, 0, mapWidth, mapHeight, tiles, tileRadius);
 		playerPosX += move2X * result.fraction;
@@ -101,15 +124,16 @@ void Loop() {
 	BeginDrawing();
 	ClearBackground(BLACK);
 
+	//playerColor = coyoteTimer > 0 ? GREEN : YELLOW;
 
 	for (int y = 0; y < mapHeight; y++) {
 		for (int x = 0; x < mapWidth; x++) {
 			if (tiles[y * mapWidth + x] != 0) {
 				DrawRectangle(x * tileSize - tileRadius, y * tileSize - tileRadius, tileSize, tileSize, GRAY);
 			}
-			char number[7];
-			sprintf(number, "%d,%d", x, y);
-			DrawText(number, x * tileSize - 7, y * tileSize - 4, 8, WHITE);
+			//char number[7];
+			//sprintf(number, "%d,%d", x, y);
+			//DrawText(number, x * tileSize - 7, y * tileSize - 4, 8, WHITE);
 		}
 	}
 
@@ -136,11 +160,11 @@ int main ()
 {
 	Init();
 
-	//SetConfigFlags(FLAG_VSYNC_HINT);
+	SetConfigFlags(FLAG_VSYNC_HINT);
 
 	// set up the window
 	InitWindow(1280, 1024, "Hello Raylib");
-	//SetTargetFPS(30);
+	//SetTargetFPS(6);
 
 	// game loop
 	while (!WindowShouldClose())
