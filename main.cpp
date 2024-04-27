@@ -6,7 +6,7 @@
 //settings
 const int screenWidth = 768;
 const int screenHeight = 640;
-const int frameRate = 60;
+const int frameRate = 144;
 
 const int tileSize = 64;
 const int tileRadius = tileSize / 2;
@@ -47,7 +47,7 @@ float testPosY;
 
 
 void Init() {
-	std::string level = "111111111111111111111110000000111000000011100000000000000000001101001110000000111001100001110000000111001111001111001100011101111111111001111001101111111111111111001111111111111111100011111110000000111110000011100000000000000010001100001110000000111001100001110000000111001111001111001100111101111111111001111111101111111111111111111111111111111111111111111";	
+	std::string level = "111111111111111111111110000000111000000011100000000000000000001101001110000000111001100001110000000111001101001111001100011101101111111001111001101100111111111111001111110111111111100011111110000000111110000011100000000000000010001100001110000000111001100001110000000111001110000000000000111101111111111111111111101111111111111111111111111111111111111111111";	
 	tiles = new int[level.size()];
 	for (int i = 0; i < level.size(); i++) { tiles[i] = level[i] - '0'; }
 
@@ -141,8 +141,10 @@ void Loop() {
 		playerPosX += move2X * result.fraction;
 	}
 
+	int playerX = (int)(playerPosX + 0.5f);
+	int playerY = (int)(playerPosY + 0.5f);
+
 	//camera handling
-	//player jiggling between frames when moving horizontally - how to fix?
 	{
 		float cameraMinX = screenWidth / 2 - tileRadius;
 		float cameraMaxX = mapWidth * tileSize - screenWidth / 2 - tileRadius;
@@ -159,12 +161,15 @@ void Loop() {
 		//testPosX = newCameraPos.x;
 		//testPosY = newCameraPos.y;
 
-		text = std::to_string(cameraDistance);
+		//text = std::to_string(cameraDistance);
 
 		cameraPos = Vector2Lerp(cameraPos, newCameraPos,  std::min(1.f, (cameraFollowFraction + cameraFollowConstant / cameraDistance) * delta));
 
-		camera.target = cameraPos;
-		//camera.target = Vector2{ (float)(int)(cameraPos.x + 0.5), (float)(int)(cameraPos.y + 0.5) };
+		int distanceX = (int)(cameraPos.x - playerPosX + 0.5);
+		int distanceY = (int)(cameraPos.y - playerPosY + 0.5);
+
+		//camera.target = cameraPos;
+		camera.target = Vector2{ (float)(playerX + distanceX), (float)(playerY + distanceY) };
 	}
 
 	//can't move around a corner in a single frame. how do we feel about this?
@@ -188,8 +193,9 @@ void Loop() {
 	}
 
 	//DrawRectangle(x1, y1, x2 - x1, y2 - y1, GREEN);
-
-	DrawRectangle(playerPosX - playerRadius, playerPosY - playerRadius, playerRadius * 2, playerRadius * 2, playerColor);
+	
+	DrawRectangle(playerX - playerRadius, playerY - playerRadius, playerRadius * 2, playerRadius * 2, playerColor);
+	
 
 	//DrawCircle(testPosX, testPosY, 8, RED);
 
@@ -202,6 +208,10 @@ void Loop() {
 
 	DrawText(std::to_string(playerPosX).c_str(), 128, 4, 20, WHITE);
 	DrawText(std::to_string(playerPosY).c_str(), 128, 32, 20, WHITE);
+	DrawText(std::to_string(cameraPos.x - playerPosX).c_str(), 128, 60, 20, WHITE);
+	DrawText(std::to_string(cameraPos.y - playerPosY).c_str(), 128, 88, 20, WHITE);
+	DrawText(std::to_string(camera.target.x - playerX).c_str(), 256, 60, 20, WHITE);
+	DrawText(std::to_string(camera.target.y - playerY).c_str(), 256, 88, 20, WHITE);
 
 
 	if (horizontalDirection == 1) DrawText("RIGHT", 4, 50, 20, RED);
