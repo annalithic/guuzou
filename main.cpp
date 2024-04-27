@@ -1,8 +1,13 @@
 #include "raylib.h"
+#include "raymath.h"
 #include <string>
 #include "collision.h"
 
 //settings
+const int screenWidth = 768;
+const int screenHeight = 640;
+const int frameRate = 60;
+
 const int tileSize = 64;
 const int tileRadius = tileSize / 2;
 
@@ -12,6 +17,9 @@ float jumpSpeed = 800;
 float gravity = 2000;
 float coyoteTime = 0.05;
 float jumpQueueWindow = 0.1;
+
+float cameraFollowConstant = 100;
+float cameraFollowFraction = 10;
 
 //initial state
 float playerPosX = 200;
@@ -25,15 +33,29 @@ float jumpQueueTimer = 0;
 float coyoteTimer = 0;
 Color playerColor = YELLOW;
 
+
 //uninitialized
 int mapWidth = 21;
 int mapHeight = 17;
 int* tiles;
+Camera2D camera;
+Vector2 cameraPos;
+
+//delete later
+float testPosX;
+float testPosY;
+
 
 void Init() {
 	std::string level = "111111111111111111111110000000111000000011100000000000000000001101001110000000111001100001110000000111001111001111001100011101111111111001111001101111111111111111001111111111111111100011111110000000111110000011100000000000000010001100001110000000111001100001110000000111001111001111001100111101111111111001111111101111111111111111111111111111111111111111111";	
 	tiles = new int[level.size()];
 	for (int i = 0; i < level.size(); i++) { tiles[i] = level[i] - '0'; }
+
+	camera = Camera2D{ 0 };
+	camera.offset = Vector2{ screenWidth / 2, screenHeight / 2 };
+	camera.rotation = 0;
+	camera.zoom = 1;
+
 }
 
 
@@ -55,7 +77,7 @@ void TileCollide(int x, int y) {
 }
 
 void Loop() {
-	float delta = GetFrameTime();
+	const float delta = GetFrameTime();
 	std::string text = std::to_string(GetFPS());
 
 	if (IsKeyPressed(KEY_LEFT) || (IsKeyReleased(KEY_RIGHT) && IsKeyDown(KEY_LEFT))) horizontalDirection = -1;
@@ -119,10 +141,38 @@ void Loop() {
 		playerPosX += move2X * result.fraction;
 	}
 
+	//camera handling
+	//player jiggling between frames when moving horizontally - how to fix?
+	{
+		float cameraMinX = screenWidth / 2 - tileRadius;
+		float cameraMaxX = mapWidth * tileSize - screenWidth / 2 - tileRadius;
+		float cameraMinY = screenHeight / 2 - tileRadius;
+		float cameraMaxY = mapHeight * tileSize - screenHeight / 2 - tileRadius;
+
+		Vector2 newCameraPos = Vector2{
+			std::min(std::max(cameraMinX, playerPosX), cameraMaxX),
+			std::min(std::max(cameraMinY, playerPosY), cameraMaxY)
+		};
+
+		float cameraDistance = Vector2Length(Vector2Subtract(newCameraPos, cameraPos));
+
+		//testPosX = newCameraPos.x;
+		//testPosY = newCameraPos.y;
+
+		text = std::to_string(cameraDistance);
+
+		cameraPos = Vector2Lerp(cameraPos, newCameraPos,  std::min(1.f, (cameraFollowFraction + cameraFollowConstant / cameraDistance) * delta));
+
+		camera.target = cameraPos;
+		//camera.target = Vector2{ (float)(int)(cameraPos.x + 0.5), (float)(int)(cameraPos.y + 0.5) };
+	}
+
 	//can't move around a corner in a single frame. how do we feel about this?
 
 	BeginDrawing();
 	ClearBackground(BLACK);
+
+	BeginMode2D(camera);
 
 	//playerColor = coyoteTimer > 0 ? GREEN : YELLOW;
 
@@ -141,13 +191,18 @@ void Loop() {
 
 	DrawRectangle(playerPosX - playerRadius, playerPosY - playerRadius, playerRadius * 2, playerRadius * 2, playerColor);
 
+	//DrawCircle(testPosX, testPosY, 8, RED);
+
+	EndMode2D();
 
 	//DrawRectangle(0, 500 + playerSize, 1280, 800, GRAY);
 	
+	DrawText(text.c_str(), 4, 4, 20, WHITE);
+
+
 	DrawText(std::to_string(playerPosX).c_str(), 128, 4, 20, WHITE);
 	DrawText(std::to_string(playerPosY).c_str(), 128, 32, 20, WHITE);
 
-	DrawText(text.c_str(), 64, 4, 20, WHITE);
 
 	if (horizontalDirection == 1) DrawText("RIGHT", 4, 50, 20, RED);
 	if (horizontalDirection == -1) DrawText("LEFT", 4, 50, 20, GREEN);
@@ -160,11 +215,11 @@ int main ()
 {
 	Init();
 
-	SetConfigFlags(FLAG_VSYNC_HINT);
+	if(frameRate == 144) SetConfigFlags(FLAG_VSYNC_HINT);
 
 	// set up the window
-	InitWindow(1280, 1024, "Hello Raylib");
-	//SetTargetFPS(6);
+	InitWindow(screenWidth, screenHeight, "Hello Raylib");
+	if (frameRate != 0 && frameRate != 144) SetTargetFPS(frameRate);
 
 	// game loop
 	while (!WindowShouldClose())
