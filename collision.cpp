@@ -1,7 +1,7 @@
 #include "collision.h"
 
 bool Blocked(int x, int y, int mapWidth, int mapHeight, int* tiles) {
-	return tiles[y * mapWidth + x] != 0;
+	return tiles[y * mapWidth + x] == 1;
 }
 
 MoveResult Collision::Move(float posX, float posY, float radius, float moveX, float moveY, int mapWidth, int mapHeight, int* tiles, int tileRadius)

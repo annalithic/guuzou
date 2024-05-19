@@ -2,17 +2,18 @@
 #include "raymath.h"
 #include <string>
 #include "collision.h"
+#include "level.h"
 
 //settings
-const int screenWidth = 768;
-const int screenHeight = 640;
+const int screenWidth = 1920;
+const int screenHeight = 1080;
 const int frameRate = 144;
 
 const int tileSize = 64;
 const int tileRadius = tileSize / 2;
 
 int playerRadius = 16;
-float playerMaxSpeed = 256;
+float playerMaxSpeed = 360;
 float jumpSpeed = 800;
 float gravity = 2000;
 float coyoteTime = 0.05;
@@ -22,7 +23,7 @@ float cameraFollowConstant = 100;
 float cameraFollowFraction = 10;
 
 //initial state
-float playerPosX = 200;
+float playerPosX = 1920;
 float playerPosY = 135;
 int horizontalDirection = 0;
 int verticalDirection = 0;
@@ -35,11 +36,12 @@ Color playerColor = YELLOW;
 
 
 //uninitialized
-int mapWidth = 21;
-int mapHeight = 17;
-int* tiles;
+//int mapWidth = 21;
+//int mapHeight = 17;
+//int* tiles;
 Camera2D camera;
 Vector2 cameraPos;
+Level level;
 
 //delete later
 float testPosX;
@@ -47,15 +49,24 @@ float testPosY;
 
 
 void Init() {
-	std::string level = "111111111111111111111110000000111000000011100000000000000000001101001110000000111001100001110000000111001101001111001100011101101111111001111001101100111111111111001111110111111111100011111110000000111110000011100000000000000010001100001110000000111001100001110000000111001110000000000000111101111111111111111111101111111111111111111111111111111111111111111";	
-	tiles = new int[level.size()];
-	for (int i = 0; i < level.size(); i++) { tiles[i] = level[i] - '0'; }
+	//std::string level = "111111111111111111111110000000111000000011100000000000000000001101001110000000111001100001110000000111001101001111001100011101101111111001111001101100111111111111001111110111111111100011111110000000111110000011100000000000000010001100001110000000111001100001110000000111001110000000000000111101111111111111111111101111111111111111111111111111111111111111111";	
+	//tiles = new int[level.size()];
+	//for (int i = 0; i < level.size(); i++) { tiles[i] = level[i] - '0'; }
 
 	camera = Camera2D{ 0 };
 	camera.offset = Vector2{ screenWidth / 2, screenHeight / 2 };
 	camera.rotation = 0;
 	camera.zoom = 1;
 
+	level = ("E:\\A\\A\\Visual Studio\\game-premake-main\\game\\level.txt");
+	for (int i = 0; i < level.sizeX * level.sizeY; i++) {
+		if (level.tiles[i] == 2) {
+			playerPosX = i % level.sizeX * tileSize;
+			playerPosY = i / level.sizeX * tileSize;
+			TraceLog(LOG_INFO, "%d %d PLAYER POS", playerPosX, playerPosY);
+			break;
+		}
+	}
 }
 
 
@@ -120,7 +131,7 @@ void Loop() {
 	float moveX = horizontalVelocity * delta;
 	float moveY = verticalVelocity * delta;
 
-	auto result = Collision::Move(playerPosX, playerPosY, playerRadius, moveX, moveY, mapWidth, mapHeight, tiles, tileRadius);
+	auto result = Collision::Move(playerPosX, playerPosY, playerRadius, moveX, moveY, level.sizeX, level.sizeY, level.tiles, tileRadius);
 
 	playerPosY += moveY * result.fraction;
 	playerPosX += moveX * result.fraction;
@@ -129,7 +140,7 @@ void Loop() {
 	//hit wall, continue vertically
 	if (result.result == 1 || result.result == 3) { 
 		float move2Y = moveY * (1 - result.fraction);
-		result = Collision::Move(playerPosX, playerPosY, playerRadius, 0, move2Y, mapWidth, mapHeight, tiles, tileRadius);
+		result = Collision::Move(playerPosX, playerPosY, playerRadius, 0, move2Y, level.sizeX, level.sizeY, level.tiles, tileRadius);
 		playerPosY += move2Y * result.fraction;
 	}
 	//hit ceil/floor, continue horizontally
@@ -137,7 +148,7 @@ void Loop() {
 		if (result.result == 2) grounded = true;
 		verticalVelocity = 0;
 		float move2X = moveX * (1 - result.fraction);
-		result = Collision::Move(playerPosX, playerPosY, playerRadius, move2X, 0, mapWidth, mapHeight, tiles, tileRadius);
+		result = Collision::Move(playerPosX, playerPosY, playerRadius, move2X, 0, level.sizeX, level.sizeY, level.tiles, tileRadius);
 		playerPosX += move2X * result.fraction;
 	}
 
@@ -147,9 +158,9 @@ void Loop() {
 	//camera handling
 	{
 		float cameraMinX = screenWidth / 2 - tileRadius;
-		float cameraMaxX = mapWidth * tileSize - screenWidth / 2 - tileRadius;
+		float cameraMaxX = level.sizeX * tileSize - screenWidth / 2 - tileRadius;
 		float cameraMinY = screenHeight / 2 - tileRadius;
-		float cameraMaxY = mapHeight * tileSize - screenHeight / 2 - tileRadius;
+		float cameraMaxY = level.sizeY * tileSize - screenHeight / 2 - tileRadius;
 
 		Vector2 newCameraPos = Vector2{
 			std::min(std::max(cameraMinX, playerPosX), cameraMaxX),
@@ -181,10 +192,13 @@ void Loop() {
 
 	//playerColor = coyoteTimer > 0 ? GREEN : YELLOW;
 
-	for (int y = 0; y < mapHeight; y++) {
-		for (int x = 0; x < mapWidth; x++) {
-			if (tiles[y * mapWidth + x] != 0) {
+	for (int y = 0; y < level.sizeY; y++) {
+		for (int x = 0; x < level.sizeX; x++) {
+			if (level.tiles[y * level.sizeX + x] == 1) {
 				DrawRectangle(x * tileSize - tileRadius, y * tileSize - tileRadius, tileSize, tileSize, GRAY);
+			}
+			else if (level.tiles[y * level.sizeX + x] == 2) {
+				DrawRectangle(x* tileSize - tileRadius, y* tileSize - tileRadius, tileSize, tileSize, BLUE);
 			}
 			//char number[7];
 			//sprintf(number, "%d,%d", x, y);

@@ -10,8 +10,10 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="collision.cpp" />
+    <ClCompile Include="level.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="collision.h" />
+    <ClInclude Include="level.h" />
   </ItemGroup>
 </Project>
