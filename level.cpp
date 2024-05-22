@@ -89,4 +89,12 @@ Level::Level(const char* levelfile)
         }
 
     }
+
+    //set last door to exit (maybe include room type in setroom)
+    for (int i = sizeX * sizeY - 1; i >= 0; i--) {
+        if (tiles[i] == 2) {
+            tiles[i] = 3;
+            break;
+        }
+    }
 }

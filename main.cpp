@@ -5,15 +5,15 @@
 #include "level.h"
 
 //settings
-const int screenWidth = 1920;
-const int screenHeight = 1080;
+const int screenWidth = 1280;
+const int screenHeight = 720;
 const int frameRate = 144;
 
 const int tileSize = 64;
 const int tileRadius = tileSize / 2;
 
 int playerRadius = 16;
-float playerMaxSpeed = 360;
+float playerMaxSpeed = 400;
 float jumpSpeed = 800;
 float gravity = 2000;
 float coyoteTime = 0.05;
@@ -47,6 +47,18 @@ Level level;
 float testPosX;
 float testPosY;
 
+void CreateLevel() {
+	level = ("E:\\A\\A\\Visual Studio\\game-premake-main\\game\\level.txt");
+	for (int i = 0; i < level.sizeX * level.sizeY; i++) {
+		if (level.tiles[i] == 2) {
+			playerPosX = i % level.sizeX * tileSize;
+			playerPosY = i / level.sizeX * tileSize;
+			TraceLog(LOG_INFO, "%d %d PLAYER POS", playerPosX, playerPosY);
+			break;
+		}
+	}
+
+}
 
 void Init() {
 	//std::string level = "111111111111111111111110000000111000000011100000000000000000001101001110000000111001100001110000000111001101001111001100011101101111111001111001101100111111111111001111110111111111100011111110000000111110000011100000000000000010001100001110000000111001100001110000000111001110000000000000111101111111111111111111101111111111111111111111111111111111111111111";	
@@ -58,15 +70,7 @@ void Init() {
 	camera.rotation = 0;
 	camera.zoom = 1;
 
-	level = ("E:\\A\\A\\Visual Studio\\game-premake-main\\game\\level.txt");
-	for (int i = 0; i < level.sizeX * level.sizeY; i++) {
-		if (level.tiles[i] == 2) {
-			playerPosX = i % level.sizeX * tileSize;
-			playerPosY = i / level.sizeX * tileSize;
-			TraceLog(LOG_INFO, "%d %d PLAYER POS", playerPosX, playerPosY);
-			break;
-		}
-	}
+	CreateLevel();
 }
 
 
@@ -90,6 +94,8 @@ void TileCollide(int x, int y) {
 void Loop() {
 	const float delta = GetFrameTime();
 	std::string text = std::to_string(GetFPS());
+
+	if (IsKeyPressed(KEY_R)) CreateLevel();
 
 	if (IsKeyPressed(KEY_LEFT) || (IsKeyReleased(KEY_RIGHT) && IsKeyDown(KEY_LEFT))) horizontalDirection = -1;
 	else if (IsKeyPressed(KEY_RIGHT) || (IsKeyReleased(KEY_LEFT) && IsKeyDown(KEY_RIGHT))) horizontalDirection = 1;
@@ -155,6 +161,10 @@ void Loop() {
 	int playerX = (int)(playerPosX + 0.5f);
 	int playerY = (int)(playerPosY + 0.5f);
 
+	if (level.tiles[(playerX + tileRadius) / tileSize + (playerY + tileRadius) / tileSize * level.sizeX] == 3) {
+		CreateLevel();
+	}
+
 	//camera handling
 	{
 		float cameraMinX = screenWidth / 2 - tileRadius;
@@ -199,6 +209,9 @@ void Loop() {
 			}
 			else if (level.tiles[y * level.sizeX + x] == 2) {
 				DrawRectangle(x* tileSize - tileRadius, y* tileSize - tileRadius, tileSize, tileSize, BLUE);
+			}
+			else if (level.tiles[y * level.sizeX + x] == 3) {
+				DrawRectangle(x * tileSize - tileRadius, y * tileSize - tileRadius, tileSize, tileSize, RED);
 			}
 			//char number[7];
 			//sprintf(number, "%d,%d", x, y);
