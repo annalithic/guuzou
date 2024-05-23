@@ -17,9 +17,19 @@ void ReadRoom(int* room, int roomSizeX, int roomSizeY, std::ifstream& stream) {
 }
 
 void SetRoom(int* room, int roomX, int roomY, int* tiles, int sizeX, int roomSizeX, int roomSizeY) {
-    for (int y = 0; y < roomSizeY; y++) {
-        for (int x = 0; x < roomSizeX; x++) {
-            tiles[(roomX + 1) * roomSizeX + x + ((roomY + 1) * roomSizeY + y) * sizeX] = room[x + y * roomSizeX];
+    bool flip = rand() % 2 == 1;
+    if (flip) {
+        for (int y = 0; y < roomSizeY; y++) {
+            for (int x = 0; x < roomSizeX; x++) {
+                tiles[(roomX + 2) * roomSizeX - x - 1 + ((roomY + 1) * roomSizeY + y) * sizeX] = room[x + y * roomSizeX];
+            }
+        }
+    }
+    else {
+        for (int y = 0; y < roomSizeY; y++) {
+            for (int x = 0; x < roomSizeX; x++) {
+                tiles[(roomX + 1) * roomSizeX + x + ((roomY + 1) * roomSizeY + y) * sizeX] = room[x + y * roomSizeX];
+            }
         }
     }
 }
@@ -70,7 +80,6 @@ Level::Level(const char* levelfile)
 
     std::srand(std::time(nullptr));
     int start = rand() % 4;
-
 
     for (int y = 0; y < roomsY; y++) {
         int end = rand() % 4;
